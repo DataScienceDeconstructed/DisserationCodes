@@ -1,0 +1,3 @@
+The python files go in one directory e.g. /Code
+that directory needs to have the molvecular dynamics code added to it (e.g. mpd-md)
+the bash scripts and basedim files go into the bin directory of the mpd-md code
