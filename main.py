@@ -7,8 +7,9 @@ import sys
 if __name__ == "__main__":
     # start out with empty distributions, a negative index so that it goes to 0 at the start, the testing significance level,
     # and a tracking variable for how many times in a row the test has failed.
-    dir_base = sys.argv[1] if len(sys.argv)>1 else "/home/chdavis/Code/mpd-md/bin/exp_test_x/5/10/"
-    filename = sys.argv[2] if len(sys.argv)>2 else "exp_test_x"
+    print("starting main script")
+    dir_base = sys.argv[1] if len(sys.argv)>1 else "/home/chdavis/Code/mpd-md/bin/main_testing2/exp_test_6/Umin_1/rad_2/den_18/NP_10/"
+    filename = sys.argv[2] if len(sys.argv)>2 else "exp_test_6.Umin1.rad2.den18.NP10"
     print(dir_base, filename)
     
     dist = ReferenceDistribution(_type="Binary", _reference=0.0, _dist=[0, 0])
@@ -18,7 +19,12 @@ if __name__ == "__main__":
     brushz_lag= []
     
     system_dimensions = [0.0,0.0,0.0]
-    
+
+    radius = float(dir_base.split("/")[-3].split("_")[-1])
+    print(radius)
+    NP_Volume = 4.0 / 3.0 * np.pi * radius * radius * radius
+
+
     print("Reading Simulation Global Values")
     # get information about the simulation
     with open(dir_base  + filename + ".mpd", 'r') as fp:
@@ -125,31 +131,38 @@ if __name__ == "__main__":
                 #print(j, p, 'ACCEPT NULL HYPOTHESIS. distributions very similar',info_lag[i], info_lag[i+j])
                 fp.write("1, " + str(j) + ", "+ str(p) + ", "+ str(rValue[1]) +", "+str(end_index) +"\n" )
     """
+    print("writing datafiles")
     #write out data of note
     with open(dir_base + "brush_embeddings.dat", 'w') as fp:
         for x in info_lag:
             fp.write(str(x[0]/(x[1]+x[0]))+"\n")
-    
-    with open(dir_base + "solvent_NP_density.dat", 'w') as fp:
-        for i, x in enumerate(info_lag):
-            fp.write(str ( x[1] / (system_dimensions[0] * system_dimensions[1] * (system_dimensions[2] - brushz_lag[i] )))+"\n") 
 
-    with open(dir_base + "brush_NP_density.dat", 'w') as fp:
+    with open(dir_base + "brush_height.dat", 'w') as fp:
         for i, x in enumerate(info_lag):
-            fp.write(str ( x[0] / (system_dimensions[0] * system_dimensions[1] *  brushz_lag[i] ))+"\n")
+            fp.write(str(brushz_lag[i])+"\n")
+
+    # making a big change here on July4th 2022 until now the densities have been #NP / r0^3 I am changing these to
+    # volume fraction
+    with open(dir_base + "solvent_NP_volume_fraction.dat", 'w') as fp:
+        for i, x in enumerate(info_lag):
+            fp.write(str ( x[1]*NP_Volume / (system_dimensions[0] * system_dimensions[1] * (system_dimensions[2] - brushz_lag[i] )))+"\n")
+
+    with open(dir_base + "brush_NP_volume_fraction.dat", 'w') as fp:
+        for i, x in enumerate(info_lag):
+            fp.write(str ( x[0]*NP_Volume / (system_dimensions[0] * system_dimensions[1] *  brushz_lag[i] ))+"\n")
 
     inv_solvent_density = []
     inv_brush_density = []
-    with open(dir_base + "inv_solvent_density.dat", 'w') as fp:
+    with open(dir_base + "inv_solvent_volume_fraction.dat", 'w') as fp:
         for i, x in enumerate(info_lag):
-            solv_data = x[1] /  (system_dimensions[0] * system_dimensions[1] * (system_dimensions[2] - brushz_lag[i] ))
-            fp.write( str(1.0/(float(i)+ 1.0)) +","+ str(solv_data) + " \n")
+            solv_data = x[1]*NP_Volume /  (system_dimensions[0] * system_dimensions[1] * (system_dimensions[2] - brushz_lag[i] ))
+            fp.write( str(1.0/(float(i)+ 1.0)) +"\t"+ str(solv_data) + " \n")
             inv_solvent_density.append([1.0/(float(i)+ 1.0) , solv_data])
     
-    with open(dir_base + "inv_brush_density.dat", 'w') as fp:
+    with open(dir_base + "inv_brush_volume_fraction.dat", 'w') as fp:
         for i, x in enumerate(info_lag):
-            brush_data = x[0] /  (system_dimensions[0] * system_dimensions[1] *  brushz_lag[i] )
-            fp.write( str(1.0/(float(i)+ 1.0)) +","+ str(brush_data) + " \n")
+            brush_data = x[0]*NP_Volume /  (system_dimensions[0] * system_dimensions[1] *  brushz_lag[i] )
+            fp.write( str(1.0/(float(i)+ 1.0)) +"\t"+ str(brush_data) + " \n")
             inv_brush_density.append([1.0/(float(i)+ 1.0) , brush_data])
  
     len_equil = int(len(inv_solvent_density)*.2) # use last 20% of simulation to approx equalibrium
